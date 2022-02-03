@@ -35,9 +35,16 @@ async function run() {
             user.status = 0;
             const result = await usersCollection.insertOne(user)
             res.send(result)
-            console.log(result);
         });
 
+        //Get all user
+        app.get('/users', async (req, res) => {
+            const users = usersCollection.find({});
+            const result = await users.toArray();
+            res.json(result);
+        })
+
+        //Get user by email
         app.get('/users/:email', async (req, res) => {
             const email = req.params.email;
             const query = { email: email };
@@ -49,11 +56,31 @@ async function run() {
             res.json(user);
         })
 
-        //User Insert To Database
-        app.post('/user', async (req, res) => {
+
+
+        //User status change
+        app.put('/users/status/:email', async (req, res) => {
+            const email = req.params.email;
             const data = req.body;
-            console.log(data);
-        });
+            const query = { email: email };
+            const updateDoc = { $set: data };
+            const user = await usersCollection.updateOne(query, updateDoc);
+            res.json(user);
+        })
+
+        //make user to staff
+        app.put('/users/staff', async (req, res) => {
+            const email = req.body.email;
+            const role = req.body.role;
+            const filter = { email: email }
+            const updateDoc = {
+                $set: {
+                    role: role
+                }
+            }
+            const user = await usersCollection.updateOne(filter, updateDoc)
+            res.json(user)
+        })
 
 
         //Add Post API
@@ -66,10 +93,73 @@ async function run() {
             const picData = req.files.image.data;
             const encodedPic = picData.toString('base64');
             const picBuffer = Buffer.from(encodedPic, 'base64');
-            const post = { title, date, description, image: picBuffer, status: 0, comment: ['Robin:Thanks for this information'], author }
+            const post = {
+                title, date, description, image: picBuffer, status: 0, comment: [], author
+            }
             const result = await postsCollection.insertOne(post);
             res.json(result);
         });
+
+        //Get Pending Posts
+        app.get('/posts/pending', async (req, res) => {
+            const posts = postsCollection.find({ status: 0 });
+            const result = await posts.toArray();
+            res.json(result);
+        });
+
+        //Get All Posts
+        app.get('/posts', async (req, res) => {
+            const posts = postsCollection.find({ status: 1 });
+            const result = await posts.toArray();
+            res.json(result);
+        });
+        // //Get All Posts
+        // app.get('/posts/comment/:id', async (req, res) => {
+        //     const post = { _id: ObjectId(id) }
+        //     const posts = postsCollection.find({ comment });
+        //     const result = await posts.toArray();
+        //     res.json(result);
+        // });
+
+
+        //Get SIngle Blog
+        app.get('/posts/:id', async (req, res) => {
+            const id = req.params;
+            const query = { _id: ObjectId(id) }
+            const result = await postsCollection.findOne(query);
+            res.json(result);
+        });
+
+        //Post status change to Approve
+        app.put('/posts/status/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) };
+            const data = req.body;
+            const updateDoc = { $set: data };
+            const updatedPost = await postsCollection.updateOne(filter, updateDoc);
+            res.json(updatedPost);
+        });
+
+        //Delete Post
+        app.delete('/posts/:id', async (req, res) => {
+            const id = req.params;
+            const query = { _id: ObjectId(id) };
+            const result = await postsCollection.deleteOne(query);
+            res.json(result);
+        });
+
+        //update comment
+        app.put('/posts/comment/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) };
+            const data = req.body;
+            const comment = { comment: data }
+            const updateDoc = { $set: comment };
+            const updatedPost = await postsCollection.updateOne(filter, updateDoc);
+            res.json(updatedPost);
+        });
+
+
     }
     finally {
         //   await client.close();
