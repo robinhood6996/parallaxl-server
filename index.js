@@ -32,7 +32,7 @@ async function run() {
         app.post('/users', async (req, res) => {
             const user = req.body;
             user.role = 'user';
-            user.status = 0;
+            user.status = 1;
             const result = await usersCollection.insertOne(user)
             res.send(result)
         });
